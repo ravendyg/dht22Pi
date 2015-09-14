@@ -3,8 +3,8 @@
     var usergrid = require('usergrid');					// apigee sdk
 
     var client = new usergrid.client({              // initializing SDK
-        orgName: "venom",
-        appName: "sandbox"
+        orgName: "***",
+        appName: "***"
     });
 
     // list of variables

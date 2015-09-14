@@ -137,7 +137,7 @@ int main () {
 			cout << "Humidity: " << hum << "; Temperature: " << temp << "; Time: " << str << endl;
 			myFile.open(strf.c_str(), ios:: out | ios::app);
 			if (myFile.is_open()) {
-				myFile << hum << "\t" << temp << "\t" << str << endl;
+				myFile << hum << "\t" << temp << "\t" << str << "\t\n";
 				myFile.close();
 			} else {
 				cout << "Unable to open long file" << endl;

@@ -130,7 +130,7 @@ int main () {
 
 				// write data to the file: long - for permanent storage, short for javascript
 			ofstream myFile;
-			strf = "/home/pi/data";
+			strf = "/home/pi/temp/data";
 			strf.append(str);
 			strf.append(".txt");
 			str = strs.str();		// complete time as string
@@ -142,7 +142,7 @@ int main () {
 			} else {
 				cout << "Unable to open long file" << endl;
 			}
-			myFile.open("/home/pi/tempData.txt", ios:: out | ios::trunc);
+			myFile.open("/home/pi/temp/tempData.txt", ios:: out | ios::trunc);
 			if (myFile.is_open()) {
 				myFile << hum << "\t" << temp << "\t" << str << endl;
 				myFile.close();

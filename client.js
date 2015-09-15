@@ -3,8 +3,11 @@
     var usergrid = require('usergrid');					// apigee sdk
 
     var client = new usergrid.client({              // initializing SDK
-        orgName: "***",
-        appName: "***"
+        orgName: '***',
+        appName: '***',
+        authType: usergrid.AUTH_CLIENT_ID,
+        cliendID: '***',
+        clientSecret: '***'
     });
 
     // list of variables

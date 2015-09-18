@@ -44,6 +44,7 @@
 
                 var options = {				// will be sent to apigee
                     type: "tempData",
+                    timeStamp: new Date().getTime(),
                     year: time.year,
                     month: time.month,
                     day: time.day,

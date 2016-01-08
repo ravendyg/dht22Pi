@@ -22,4 +22,4 @@ program flow:
 - read previous output (tempData.txt)
 - send to apigee.com
 
-http://venomyd2.esy.es/temp.html — result (far from completion)
+http://venomyd2.esy.es/temp.html — result (far from completion, wanna move to D3, but don't have time for any global change)

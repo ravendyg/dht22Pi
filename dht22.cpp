@@ -15,6 +15,19 @@
 #include <string>
 #include <sstream>
 
+// http://coding.debuntu.org/c-linux-socket-programming-tcp-simple-http-client
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <string.h>
+
+
+#define HOST "192.168.1.158"
+#define PAGE "/report"
+#define PORT 3030
+#define USERAGENT "HTMLGET 1.0"
+
+
 using namespace std;
 
 #define GPIO_BASE 0x20200000
@@ -37,6 +50,10 @@ volatile unsigned *gpio, *gpset, *gpclr, *gpin, *timer, *intrupt;
 int setup(void);
 int interrupts(int flag);				// 30
 int checkData(int data[]);
+
+int create_tcp_socket();
+char *get_ip(char *host);
+char *build_post_query(char *host, char *page, char *report);
 
 int main () {
 	int n, counter;
@@ -128,27 +145,15 @@ int main () {
 			}
 
 
-				// write data to the file: long - for permanent storage, short for javascript
-			ofstream myFile;
+
 			strf = "/home/pi/temp/data";
 			strf.append(str);
 			strf.append(".txt");
 			str = strs.str();		// complete time as string
-			cout << "Humidity: " << hum << "; Temperature: " << temp << "; Time: " << str << endl;
-			myFile.open(strf.c_str(), ios:: out | ios::app);
-			if (myFile.is_open()) {
-				myFile << hum << "\t" << temp << "\t" << str << "\t\n";
-				myFile.close();
-			} else {
-				cout << "Unable to open long file" << endl;
-			}
-			myFile.open("/home/pi/temp/tempData.txt", ios:: out | ios::trunc);
-			if (myFile.is_open()) {
-				myFile << hum << "\t" << temp << "\t" << str << endl;
-				myFile.close();
-			} else {
-				cout << "Unable to open short file" << endl;
-			}
+			stringstream json;
+			json << "{humidity: " << hum << ", temperature: " << temp << ", time: " << str << "}";
+			sendreport(json.str());
+
 			return (0);
 		}
 
@@ -280,4 +285,133 @@ int checkData (int data[]) {				// 185
 	}
 
 	return(1);
+}
+
+
+// tcp
+
+void sendReport(char *report)
+{
+  struct sockaddr_in *remote;
+  int sock;
+  int tmpres;
+  char *ip;
+  char *post;
+  char buf[BUFSIZ+1];
+
+	char *host = HOST;
+	char *page = PAGE;
+
+  sock = create_tcp_socket();
+  ip = get_ip(host);
+  // fprintf(stderr, "IP is %s\n", ip);
+  remote = (struct sockaddr_in *)malloc(sizeof(struct sockaddr_in *));
+  remote->sin_family = AF_INET;
+  tmpres = inet_pton(AF_INET, ip, (void *)(&(remote->sin_addr.s_addr)));
+  if( tmpres < 0)
+  {
+    perror("Can't set remote->sin_addr.s_addr");
+    exit(1);
+  }else if(tmpres == 0)
+  {
+    fprintf(stderr, "%s is not a valid IP address\n", ip);
+    exit(1);
+  }
+  remote->sin_port = htons(PORT);
+
+  if(connect(sock, (struct sockaddr *)remote, sizeof(struct sockaddr)) < 0){
+    perror("Could not connect");
+    exit(1);
+  }
+  post = build_post_query(host, page, report);
+
+  //Send the query to the server
+  int sent = 0;
+  while(sent < strlen(post))
+  {
+    tmpres = send(sock, post+sent, strlen(post)-sent, 0);
+    if(tmpres == -1){
+      perror("Can't send query");
+      exit(1);
+    }
+    sent += tmpres;
+  }
+  //now it is time to receive the page
+  memset(buf, 0, sizeof(buf));
+  int htmlstart = 0;
+  char * htmlcontent;
+  while((tmpres = recv(sock, buf, BUFSIZ, 0)) > 0){
+    if(htmlstart == 0)
+    {
+      /* Under certain conditions this will not work.
+      * If the \r\n\r\n part is splitted into two messages
+      * it will fail to detect the beginning of HTML content
+      */
+      htmlcontent = strstr(buf, "\r\n\r\n");
+      if(htmlcontent != NULL){
+        htmlstart = 1;
+        htmlcontent += 4;
+      }
+    }else{
+      htmlcontent = buf;
+    }
+    if(htmlstart){
+      fprintf(stdout, htmlcontent);
+    }
+
+    memset(buf, 0, tmpres);
+  }
+  if(tmpres < 0)
+  {
+    perror("Error receiving data");
+  }
+  free(post);
+  free(remote);
+  free(ip);
+  close(sock);
+}
+
+int create_tcp_socket()
+{
+  int sock;
+  if((sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0){
+    perror("Can't create TCP socket");
+    exit(1);
+  }
+  return sock;
+}
+
+
+char *get_ip(char *host)
+{
+  struct hostent *hent;
+  int iplen = 15; //XXX.XXX.XXX.XXX
+  char *ip = (char *)malloc(iplen+1);
+  memset(ip, 0, iplen+1);
+  if((hent = gethostbyname(host)) == NULL)
+  {
+    herror("Can't get IP");
+    exit(1);
+  }
+  if(inet_ntop(AF_INET, (void *)hent->h_addr_list[0], ip, iplen) == NULL)
+  {
+    perror("Can't resolve host");
+    exit(1);
+  }
+  return ip;
+}
+
+char *build_post_query(char *host, char *page, char *report)
+{
+  char *query;
+  char *getpage = page;
+  char *tpl = "POST /%s HTTP/1.0\r\nHost: %s\r\nUser-Agent: %s\r\n\r\n";
+  if(getpage[0] == '/'){
+    getpage = getpage + 1;
+    fprintf(stderr,"Removing leading \"/\", converting %s to %s\n", page, getpage);
+  }
+  // -5 is to consider the %s %s %s in tpl and the ending \0
+  query = (char *)malloc(strlen(host)+strlen(getpage)+strlen(USERAGENT)+strlen(tpl)+strlen(report)-5);
+  sprintf(query, tpl, getpage, host, USERAGENT);
+  return query;
 }

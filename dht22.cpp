@@ -22,7 +22,7 @@
 #include <string.h>
 
 
-#define HOST "192.168.1.158"
+#define HOST "192.168.1.157"
 #define PAGE "/report"
 #define PORT 3030
 #define USERAGENT "HTMLGET 1.0"
@@ -54,6 +54,7 @@ int checkData(int data[]);
 int create_tcp_socket();
 char *get_ip(char *host);
 char *build_post_query(char *host, char *page, char *report);
+void sendReport(char *report);
 
 int main () {
 	int n, counter;
@@ -151,8 +152,11 @@ int main () {
 			strf.append(".txt");
 			str = strs.str();		// complete time as string
 			stringstream json;
-			json << "{humidity: " << hum << ", temperature: " << temp << ", time: " << str << "}";
-			sendreport(json.str());
+			json << "{humidity: " << hum << ", temperature: " << temp << ", time: \"" << str << "\"}";
+cout << json.str().c_str();
+//char *tempReport = json.str().c_str();
+//cout << tempReport;
+			sendReport(const_cast<char*>(json.str().c_str()));
 
 			return (0);
 		}
@@ -292,6 +296,7 @@ int checkData (int data[]) {				// 185
 
 void sendReport(char *report)
 {
+cout << "report";
   struct sockaddr_in *remote;
   int sock;
   int tmpres;
@@ -304,7 +309,7 @@ void sendReport(char *report)
 
   sock = create_tcp_socket();
   ip = get_ip(host);
-  // fprintf(stderr, "IP is %s\n", ip);
+   fprintf(stderr, "IP is %s\n", ip);
   remote = (struct sockaddr_in *)malloc(sizeof(struct sockaddr_in *));
   remote->sin_family = AF_INET;
   tmpres = inet_pton(AF_INET, ip, (void *)(&(remote->sin_addr.s_addr)));
@@ -405,13 +410,14 @@ char *build_post_query(char *host, char *page, char *report)
 {
   char *query;
   char *getpage = page;
-  char *tpl = "POST /%s HTTP/1.0\r\nHost: %s\r\nUser-Agent: %s\r\n\r\n";
+  char *tpl = "POST /%s HTTP/1.0\r\nHost: %s\r\nUser-Agent: %s\r\n\r\n%s";
   if(getpage[0] == '/'){
     getpage = getpage + 1;
     fprintf(stderr,"Removing leading \"/\", converting %s to %s\n", page, getpage);
   }
-  // -5 is to consider the %s %s %s in tpl and the ending \0
-  query = (char *)malloc(strlen(host)+strlen(getpage)+strlen(USERAGENT)+strlen(tpl)+strlen(report)-5);
-  sprintf(query, tpl, getpage, host, USERAGENT);
+  // -7 is to consider the %s %s %s %s in tpl and the ending \0
+  query = (char *)malloc(strlen(host)+strlen(getpage)+strlen(USERAGENT)+strlen(tpl)+strlen(report)-7);
+  sprintf(query, tpl, getpage, host, USERAGENT, report);
+cout << query;
   return query;
 }

@@ -345,31 +345,31 @@ cout << "report";
   memset(buf, 0, sizeof(buf));
   int htmlstart = 0;
   char * htmlcontent;
-  while((tmpres = recv(sock, buf, BUFSIZ, 0)) > 0){
-    if(htmlstart == 0)
-    {
-      /* Under certain conditions this will not work.
-      * If the \r\n\r\n part is splitted into two messages
-      * it will fail to detect the beginning of HTML content
-      */
-      htmlcontent = strstr(buf, "\r\n\r\n");
-      if(htmlcontent != NULL){
-        htmlstart = 1;
-        htmlcontent += 4;
-      }
-    }else{
-      htmlcontent = buf;
-    }
-    if(htmlstart){
-      fprintf(stdout, htmlcontent);
-    }
+  // while((tmpres = recv(sock, buf, BUFSIZ, 0)) > 0){
+  //   if(htmlstart == 0)
+  //   {
+  //     /* Under certain conditions this will not work.
+  //     * If the \r\n\r\n part is splitted into two messages
+  //     * it will fail to detect the beginning of HTML content
+  //     */
+  //     htmlcontent = strstr(buf, "\r\n\r\n");
+  //     if(htmlcontent != NULL){
+  //       htmlstart = 1;
+  //       htmlcontent += 4;
+  //     }
+  //   }else{
+  //     htmlcontent = buf;
+  //   }
+  //   if(htmlstart){
+  //     fprintf(stdout, htmlcontent);
+  //   }
 
-    memset(buf, 0, tmpres);
-  }
-  if(tmpres < 0)
-  {
-    perror("Error receiving data");
-  }
+  //   memset(buf, 0, tmpres);
+  // }
+  // if(tmpres < 0)
+  // {
+  //   perror("Error receiving data");
+  // }
   free(post);
   free(remote);
   free(ip);
@@ -410,7 +410,7 @@ char *build_post_query(char *host, char *page, char *report)
 {
   char *query;
   char *getpage = page;
-  char *tpl = "POST /%s HTTP/1.0\r\nHost: %s\r\nUser-Agent: %s\r\n\r\n%s";
+  char *tpl = "POST /%s HTTP/1.0\r\nHost: %s\r\nUser-Agent: %s\r\nContent-Type: application/json\r\n\r\n%s";
   if(getpage[0] == '/'){
     getpage = getpage + 1;
     fprintf(stderr,"Removing leading \"/\", converting %s to %s\n", page, getpage);

@@ -152,10 +152,8 @@ int main () {
 			strf.append(".txt");
 			str = strs.str();		// complete time as string
 			stringstream json;
-			json << "{humidity: " << hum << ", temperature: " << temp << ", time: \"" << str << "\"}";
-cout << json.str().c_str();
-//char *tempReport = json.str().c_str();
-//cout << tempReport;
+			json << "{\"humidity\": " << hum << ", \"temperature\": " << temp << ", \"time\": \"" << str << "\"}";
+
 			sendReport(const_cast<char*>(json.str().c_str()));
 
 			return (0);
@@ -296,7 +294,6 @@ int checkData (int data[]) {				// 185
 
 void sendReport(char *report)
 {
-cout << "report";
   struct sockaddr_in *remote;
   int sock;
   int tmpres;
@@ -309,7 +306,7 @@ cout << "report";
 
   sock = create_tcp_socket();
   ip = get_ip(host);
-   fprintf(stderr, "IP is %s\n", ip);
+//   fprintf(stderr, "IP is %s\n", ip);
   remote = (struct sockaddr_in *)malloc(sizeof(struct sockaddr_in *));
   remote->sin_family = AF_INET;
   tmpres = inet_pton(AF_INET, ip, (void *)(&(remote->sin_addr.s_addr)));
@@ -345,31 +342,31 @@ cout << "report";
   memset(buf, 0, sizeof(buf));
   int htmlstart = 0;
   char * htmlcontent;
-   while((tmpres = recv(sock, buf, BUFSIZ, 0)) > 0){
-     if(htmlstart == 0)
-     {
-       /* Under certain conditions this will not work.
-       * If the \r\n\r\n part is splitted into two messages
-       * it will fail to detect the beginning of HTML content
-       */
-       htmlcontent = strstr(buf, "\r\n\r\n");
-       if(htmlcontent != NULL){
-         htmlstart = 1;
-         htmlcontent += 4;
-       }
-     }else{
-       htmlcontent = buf;
-     }
-     if(htmlstart){
-       fprintf(stdout, htmlcontent);
-     }
+  // while((tmpres = recv(sock, buf, BUFSIZ, 0)) > 0){
+  //   if(htmlstart == 0)
+  //   {
+  //     /* Under certain conditions this will not work.
+  //    * If the \r\n\r\n part is splitted into two messages
+  //     * it will fail to detect the beginning of HTML content
+  //     */
+  //     htmlcontent = strstr(buf, "\r\n\r\n");
+  //     if(htmlcontent != NULL){
+  //       htmlstart = 1;
+  //       htmlcontent += 4;
+  //     }
+  //   }else{
+  //     htmlcontent = buf;
+  //   }
+  //   if(htmlstart){
+  //     fprintf(stdout, htmlcontent);
+  //   }
 
-     memset(buf, 0, tmpres);
-   }
-   if(tmpres < 0)
-   {
-     perror("Error receiving data");
-   }
+  //   memset(buf, 0, tmpres);
+  // }
+  // if(tmpres < 0)
+  // {
+  //   perror("Error receiving data");
+  // }
   free(post);
   free(remote);
   free(ip);
@@ -410,14 +407,14 @@ char *build_post_query(char *host, char *page, char *report)
 {
   char *query;
   char *getpage = page;
-  char *tpl = "POST /%s HTTP/1.0\r\nHost: %s\r\nUser-Agent: %s\r\nContent-Type: application/json\r\nContent-Length: 62\r\n\r\n%s\r\n\r\n";
+  char *tpl = "POST /%s HTTP/1.0\r\nHost: %s\r\nUser-Agent: %s\r\nContent-Type: application/json\r\nContent-Length: 68\r\n\r\n%s\r\n\r\n";
   if(getpage[0] == '/'){
     getpage = getpage + 1;
-    fprintf(stderr,"Removing leading \"/\", converting %s to %s\n", page, getpage);
+//    fprintf(stderr,"Removing leading \"/\", converting %s to %s\n", page, getpage);
   }
   // -7 is to consider the %s %s %s %s in tpl and the ending \0
   query = (char *)malloc(strlen(host)+strlen(getpage)+strlen(USERAGENT)+strlen(tpl)+strlen(report)-7);
   sprintf(query, tpl, getpage, host, USERAGENT, report);
-cout << query;
+
   return query;
 }
